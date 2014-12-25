@@ -22,6 +22,7 @@ import os
 import time
 import sys
 import socket
+import smbus
 
  
 class MpdMonitor():
@@ -38,9 +39,23 @@ class MpdMonitor():
 	self.STOP = 3
 	self.MAINTENANCE = 4
 	self.ERROR = 5
-	
+
 	# Open the log file
 	self.logFile = open("/tmp/mpdmonitor.log", "w", 0)
+
+	# I2C bus
+	self.bus = smbus.SMBus(1)
+	self.address = 0x04
+        time.sleep(0.2) # Give a bit of time to init
+
+    def writeI2C( self, sendstring ):
+        bd = []
+        for value in sendstring:
+            print "XX " + value + str(ord(value))
+        bd.append(ord(value))
+
+        self.bus.write_i2c_block_data(self.address, 0x00, bd)
+        return -1
 
     # helper function to dump nested file structures to inspect.
     def dump(self, obj, nested_level=0, output=sys.stdout):
@@ -74,6 +89,7 @@ class MpdMonitor():
 	""" Notify-function, add notification code here, ie. I2C"""
 	# self.dump(song_info)
 	self.log("Notify Status: {0}".format (state))
+	self.writeI2C(state)
     
     def observe_mpd(self, client):
 	"""This is the main function in the script. It observes mpd and notifies the user of any changes."""
