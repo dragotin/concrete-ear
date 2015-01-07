@@ -1,20 +1,21 @@
 #!/usr/bin/env python
 
-# Concrete Ear is free software: you can redistribute it and/or modify
+# This file is part of the Concrete Ears Project by Friday Bros.
+# Copyright 2014-2015 Klaas Freitag <concreteears@volle-kraft-voraus.de>
+#
+# mpdmonitor.py is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Concrete Ear is distributed in the hope that it will be useful,
+# mpdmonitor.py is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Concrete Ear.  If not, see <http://www.gnu.org/licenses/>.
+# along with Concrete Ears.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Copyright 2014- Klaas Freitag <concrete-ear@volle-kraft-voraus.de>
-# 
 
 import mpd
 # from daemon import Daemon
@@ -24,21 +25,15 @@ import sys
 import socket
 import smbus
 
- 
+
 class MpdMonitor():
 
     def __init__(self):
+        # Some basic configuration values
 	self.POLLING_INTERVAL = 5
-	
+
 	self.MPD_HOST = "volumio"
 	self.MPD_PORT = 6600
-	
-	# Status defines
-	self.PLAY = 1
-	self.PAUSE = 2
-	self.STOP = 3
-	self.MAINTENANCE = 4
-	self.ERROR = 5
 
 	# Open the log file
 	self.logFile = open("/tmp/mpdmonitor.log", "w", 0)
@@ -52,7 +47,7 @@ class MpdMonitor():
         bd = []
         for value in sendstring:
             print "XX " + value + str(ord(value))
-        bd.append(ord(value))
+            bd.append(ord(value))
 
         self.bus.write_i2c_block_data(self.address, 0x00, bd)
         return -1
@@ -79,18 +74,18 @@ class MpdMonitor():
 	    print >> output, '%s]' % ((nested_level) * spacing)
 	else:
 	    print >> output, '%s%s' % (nested_level * spacing, obj)
-        
+
     def log(self, line):
 	ll = "{0}: {1}".format(time.strftime("%a, %d %b %Y %H:%M:%S"), line)
 	print ll
 	self.logFile.write(ll)
-	
+
     def notify(self, state, song_info):
 	""" Notify-function, add notification code here, ie. I2C"""
 	# self.dump(song_info)
 	self.log("Notify Status: {0}".format (state))
 	self.writeI2C(state)
-    
+
     def observe_mpd(self, client):
 	"""This is the main function in the script. It observes mpd and notifies the user of any changes."""
 
@@ -106,32 +101,33 @@ class MpdMonitor():
 	    try:
 		current_song = client.currentsong()['file']
 		# Get song details
-		artist = client.currentsong()['artist']
-		album = client.currentsong()['album']
-		title = client.currentsong()['title']
+		# artist = client.currentsong()['artist']
+		# album = client.currentsong()['album']
+		# title = client.currentsong()['title']
 	    except KeyError:
-		current_song, artist, album, title = ("", "", "", "")
+		current_song = ""
 
-	    self.notify(current_status, client.currentsong())
-	    
+            if last_status != current_status or last_song != current_song:
+                self.notify(current_status, client.currentsong())
+
 	    # Save current status to compare with later
 	    last_status = current_status
 	    last_song = current_song
+
 	    # Sleep for some time before checking status again
-	    
 	    client.idle()
 
     def run(self):
 	"""Runs the notifier"""
 	self.log( "mpdMonitor Running now.")
-	
+
 	# Initialise mpd client and wait till we have a connection
 	while True:
 	    try:
 		client = mpd.MPDClient()
 		client.connect(self.MPD_HOST, int(self.MPD_PORT))
 		self.log("Connected to MPD")
-		
+
 		# Run the observer but watch for mpd crashes
 		self.observe_mpd(client)
 	    except KeyboardInterrupt:
@@ -145,4 +141,4 @@ class MpdMonitor():
 if __name__ == "__main__":
    monitor = MpdMonitor()
    monitor.run()
-   
+
