@@ -52,7 +52,8 @@ hohen Ansprüchen genügendes Gerät hergestellt werden kann.
 Wir freuen uns auf Eure Meinung!
 
 [1] http://hifiberry.com
+
 [2] http://volumio.org
 
-Klaas Freitag <concrete-ear@volle-kraft-voraus.de>
+Klaas Freitag <concrete-ear@volle-kraft-voraus.de>,
 Jan. 2015
