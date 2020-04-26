@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.0)
 project(mpdwatch)
-
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmakemodules/")
 cmake_policy(SET CMP0054 NEW)
 cmake_policy(SET CMP0057 NEW)
 
 set(CMAKE_CXX_STANDARD 14)
+find_package(LibMPDClient REQUIRED)
 
 add_subdirectory(libSSD1306)
 
@@ -19,4 +20,4 @@ target_include_directories(mpdwatch PUBLIC
 
 
 target_link_libraries(mpdwatch SSD1306)
-
+target_link_libraries(mpdwatch ${LIBMPDCLIENT_LIBRARY})

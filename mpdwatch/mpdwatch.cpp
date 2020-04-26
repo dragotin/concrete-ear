@@ -40,6 +40,13 @@
 #include <unistd.h>
 #include <sys/time.h>
 
+#include <mpd/client.h>
+#include <mpd/status.h>
+#include <mpd/entity.h>
+#include <mpd/search.h>
+#include <mpd/tag.h>
+#include <mpd/message.h>
+
 #include "OledFont8x8.h"
 #include "OledFont8x16.h"
 #include "OledI2C.h"
@@ -49,6 +56,36 @@
 namespace
 {
 volatile static std::sig_atomic_t run = 1;
+
+int handle_error(struct mpd_connection *c)
+{
+    // assert(mpd_connection_get_error(c) != MPD_ERROR_SUCCESS);
+
+    fprintf(stderr, "%s\n", mpd_connection_get_error_message(c));
+    mpd_connection_free(c);
+    return EXIT_FAILURE;
+}
+
+struct mpd_connection* connect_mpd()
+{
+    struct mpd_connection *conn = nullptr;
+
+    conn = mpd_connection_new("heikesmusik", 6600, 3000);
+
+    if (mpd_connection_get_error(conn) != MPD_ERROR_SUCCESS) {
+        if (handle_error(conn) == EXIT_FAILURE) {
+            return nullptr;
+        }
+    } else {
+        int i;
+        for(i=0;i<3;i++) {
+            printf("version[%i]: %i\n",i,
+                   mpd_connection_get_server_version(conn)[i]);
+        }
+    }
+    return conn;
+}
+
 }
 
 //-------------------------------------------------------------------------
@@ -64,10 +101,11 @@ signalHandler(
 
         run = 0;
         break;
-    };
+    }
 }
 
 //-------------------------------------------------------------------------
+
 
 void
 showTime(
@@ -134,10 +172,11 @@ main()
         }
 
         SSD1306::OledI2C oled{"/dev/i2c-1", 0x3C};
+        connect_mpd();
 
         while (run)
         {
-            showTime(oled);
+            showTime(oled);  // general
 
             constexpr auto oneSecond(std::chrono::seconds(1));
             std::this_thread::sleep_for(oneSecond);
