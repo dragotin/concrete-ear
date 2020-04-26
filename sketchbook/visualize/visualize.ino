@@ -34,7 +34,7 @@
 #define DURATION 1000
 
 int _state = 0;
-int _current_led;
+int _current_led = 0;
 boolean _state_change = true;
 
 LEDFader _leds[LEDCNT] = {
@@ -52,7 +52,9 @@ void setup()
   pinMode(13, OUTPUT);
 
   Serial.begin(9600);           // start serial for output
-
+  while( !Serial);
+  Serial.println("STARTING NOW 0205");
+  
     // Fade from 0 - 255 in 3 seconds
   for( int i = 0; i < LEDCNT; i++ ) {
     _leds[i].set_value(LED_OFF_VAL);
@@ -68,7 +70,6 @@ void loop()
   for( int i = 0; i < LEDCNT; i++ ) {
     LEDFader *led = &_leds[i];
     led->update();
-
   }
 }
 
@@ -122,11 +123,12 @@ void visualize_state()
       // LED is fading in or out, all nice.
     }
   } else if( _state == STATE_PAUSE ) {
-     _current_led = 0;
-    _leds[0].set_value(LED_OFF_VAL);
-    _leds[2].set_value(LED_OFF_VAL);
+     for( int i = 0; i < LEDCNT; i++ ) {
+       if( i != _current_led ) 
+         _leds[i].set_value(LED_OFF_VAL);
+     }
 
-    LEDFader *led = &_leds[1];
+    LEDFader *led = &_leds[_current_led];
     // only get active if led is not fading
     if( !led->is_fading() ) {
       if( led->get_value() == LED_ON_VAL ) {
@@ -166,35 +168,55 @@ void visualize_state()
 // this function is registered as an event, see setup()
 void receiveEvent(int howMany)
 {
-  String state;
+  char state[10];
+  int indx = 0;
+  
   while(Wire.available()) // loop through all but the last
   {
     char c = Wire.read(); // receive byte as a character
-    state += c;
-    Serial.print(c);         // print the character
+    Serial.println( c);
+    state[indx++] = c;
   }
+  state[indx] = 0;
+  
+  Serial.print("State: ");
   Serial.println(state);         // print the integer
-
-  if( state == "play" ) {
+  int doBlink = 0;
+  
+  if( strcmp(state, "0play")==0 ) {
     if( _state != STATE_PLAY ) {
       _state = STATE_PLAY;
       _state_change = true;
+      doBlink = 2;
     }
-  } else if( state == "pause" ) {
+  } else if( strcmp(state, "0pause")==0 ) {
     if( _state != STATE_PAUSE ) {
       _state = STATE_PAUSE;
       _state_change = true;
+      doBlink = 1;
     }
-  } else if( state == "stop" ) {
+  } else if( strcmp(state,"0stop") == 0 ) {
     if( _state != STATE_STOP ) {
       _state = STATE_STOP;
       _state_change = true;
+      doBlink = 3;
     }
   } else {
     if( _state != STATE_UNKNOWN ) {
       _state = STATE_UNKNOWN;
       _state_change = true;
+      
     }
+    doBlink = 5;
   }
+
+  for( int i = 0; i < doBlink; i++ ) {
+    digitalWrite(13, HIGH);
+    delay(1000);
+    digitalWrite(13, LOW);
+    if( i < doBlink ) delay(1000);
+  }
+
 }
+
 
